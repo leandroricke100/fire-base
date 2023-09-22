@@ -8,11 +8,14 @@ import {
   collection,
   getDoc,
   getDocs,
+  updateDoc,
+  deleteDoc,
 } from "firebase/firestore";
 
 function App() {
   const [titulo, setTitulo] = useState("");
   const [autor, setAutor] = useState("");
+  const [idPost, setIdPost] = useState("");
 
   const [posts, setPosts] = useState([]);
 
@@ -70,9 +73,40 @@ function App() {
       });
   }
 
+  async function atualizarPost() {
+    const docRef = doc(db, "posts", idPost);
+
+    await updateDoc(docRef, {
+      titulo: titulo,
+      autor: autor,
+    })
+      .then(() => {
+        console.log("Atualizado com sucesso");
+        setAutor("");
+        setTitulo("");
+        setIdPost("");
+      })
+      .catch((error) => {
+        console.log(error);
+      });
+  }
+
+  async function excluirPost(id) {
+    const docRef = doc(db, "posts", id);
+    await deleteDoc(docRef);
+  }
+
   return (
     <div className="App">
       <h1>REACT + FIREBASE</h1>
+
+      <label>Id do Post:</label>
+      <br></br>
+      <input
+        placeholder="Digite o Id do post"
+        value={idPost}
+        onChange={(e) => setIdPost(e.target.value)}
+      />
 
       <div className="container">
         <label>Título:</label>
@@ -94,15 +128,22 @@ function App() {
         <button onClick={handleAdd}>Cadastrar</button>
 
         <button onClick={buscarPost}>Buscar Post</button>
+        <br></br>
+
+        <button onClick={atualizarPost}>Atualizar Post</button>
 
         <ul>
           {posts.map((post) => {
             return (
               <li key={post.id}>
+                <strong>ID: {post.id}</strong>
+                <br></br>
                 <span>Titulo: {post.titulo}</span>
                 <br></br>
 
                 <span>Autor: {post.autor}</span>
+                <br></br>
+                <button onClick={() => excluirPost(post.id)}>Excluir</button>
                 <br></br>
                 <br></br>
               </li>
