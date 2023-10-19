@@ -1,6 +1,7 @@
-import { db } from "./firebaseConnection";
+import { db, auth } from "./firebaseConnection";
+
 import "./app.css";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   doc,
   setDoc,
@@ -10,14 +11,38 @@ import {
   getDocs,
   updateDoc,
   deleteDoc,
+  onSnapshot,
 } from "firebase/firestore";
+import { createUserWithEmailAndPassword } from "firebase/auth";
 
 function App() {
   const [titulo, setTitulo] = useState("");
   const [autor, setAutor] = useState("");
   const [idPost, setIdPost] = useState("");
+  const [senha, setSenha] = useState("");
+  const [email, setEmail] = useState("");
 
   const [posts, setPosts] = useState([]);
+
+  useEffect(() => {
+    async function loadPost() {
+      const unsub = onSnapshot(collection(db, "posts"), (snapshot) => {
+        let listaPost = [];
+
+        snapshot.forEach((doc) => {
+          listaPost.push({
+            id: doc.id,
+            titulo: doc.data().titulo,
+            autor: doc.data().autor,
+          });
+        });
+
+        setPosts(listaPost);
+      });
+    }
+
+    loadPost();
+  }, []);
 
   async function handleAdd() {
     // await setDoc(doc(db, "posts", "12345"), {
@@ -96,19 +121,59 @@ function App() {
     await deleteDoc(docRef);
   }
 
-  return (
-    <div className="App">
-      <h1>REACT + FIREBASE</h1>
+  async function novoUsuario() {
+    await createUserWithEmailAndPassword(auth, email, senha)
+      .then(() => {
+        setEmail("");
+        setSenha("");
+        console.log("CADASTRADO COM SUCESSO");
+      })
+      .catch((error) => {
+        if (error.code === "auth/weak-password") {
+          alert("Senha muito fraca");
+        } else if (error.code === "auth/email-already-in-use") {
+          alert("Email já em uso");
+        }
+      });
+  }
 
-      <label>Id do Post:</label>
-      <br></br>
-      <input
-        placeholder="Digite o Id do post"
-        value={idPost}
-        onChange={(e) => setIdPost(e.target.value)}
-      />
+  return (
+    <div>
+      <h1>REACT + FIREBASE :)</h1>
 
       <div className="container">
+        <h2>Usuarios</h2>
+        <label>Email</label>
+        <input
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="Digite seu email"
+        />
+        <br></br>
+
+        <label>Senha</label>
+        <input
+          value={senha}
+          onChange={(e) => setSenha(e.target.value)}
+          placeholder="Infome sua senha"
+        />
+        <br></br>
+
+        <button onClick={novoUsuario}>Cadastrar</button>
+      </div>
+
+      <br></br>
+      <hr />
+      <div className="container">
+        <h2>POSTS</h2>
+        <label>Id do Post:</label>
+        <br></br>
+        <input
+          placeholder="Digite o Id do post"
+          value={idPost}
+          onChange={(e) => setIdPost(e.target.value)}
+        />
+
         <label>Título:</label>
         <textarea
           typeof="text"
