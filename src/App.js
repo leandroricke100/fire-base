@@ -13,7 +13,12 @@ import {
   deleteDoc,
   onSnapshot,
 } from "firebase/firestore";
-import { createUserWithEmailAndPassword } from "firebase/auth";
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged,
+} from "firebase/auth";
 
 function App() {
   const [titulo, setTitulo] = useState("");
@@ -21,6 +26,8 @@ function App() {
   const [idPost, setIdPost] = useState("");
   const [senha, setSenha] = useState("");
   const [email, setEmail] = useState("");
+  const [user, setUser] = useState(false);
+  const [userDetail, setUserDetail] = useState([]);
 
   const [posts, setPosts] = useState([]);
 
@@ -42,6 +49,26 @@ function App() {
     }
 
     loadPost();
+  }, []);
+
+  useEffect(() => {
+    async function checkLogin() {
+      onAuthStateChanged(auth, (user) => {
+        if (user) {
+          console.log(user);
+          setUser(true);
+          setUserDetail({
+            uid: user.uid,
+            email: user.email,
+          });
+        } else {
+          setUser(false);
+          setUserDetail({});
+        }
+      });
+    }
+
+    checkLogin();
   }, []);
 
   async function handleAdd() {
@@ -137,9 +164,46 @@ function App() {
       });
   }
 
+  async function logarUsuario() {
+    await signInWithEmailAndPassword(auth, email, senha)
+      .then((value) => {
+        console.log("USER LOGADO COM SUCESSO");
+        console.log(value.user);
+
+        setUserDetail({
+          uid: value.user.uid,
+          email: value.user.email,
+        });
+        setUser(true);
+
+        setEmail("");
+        setSenha("");
+      })
+      .catch(() => {
+        console.log("ERRO AO FAZER LOGIN");
+      });
+  }
+
+  async function fazerLogout() {
+    await signOut(auth);
+    setUser(false);
+    setUserDetail({});
+  }
+
   return (
     <div>
       <h1>REACT + FIREBASE :)</h1>
+
+      {user && (
+        <div>
+          <strong>Seja bem-vindo(a) (Você está logado!)</strong> <br />
+          <span>
+            ID: {userDetail.uid} - Email: {userDetail.email}
+          </span>
+          <br></br>
+          <button onClick={fazerLogout}>Sair da conta</button>
+        </div>
+      )}
 
       <div className="container">
         <h2>Usuarios</h2>
@@ -160,6 +224,8 @@ function App() {
         <br></br>
 
         <button onClick={novoUsuario}>Cadastrar</button>
+        <br />
+        <button onClick={logarUsuario}>Fazer Login</button>
       </div>
 
       <br></br>
